@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MPL – Neon Arena League</title>
+<!-- Add jsPDF library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+:root{
+  --bg1:#0f2027;
+  --bg2:#203a43;
+  --bg3:#2c5364;
+  --neon:#3cff9e;
+  --card:rgba(255,255,255,0.08);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,Segoe UI,Arial;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2),var(--bg3));
+  color:#eafff2;
+  padding:30px;
+}
+h1{text-align:center;color:var(--neon)}
+h2{margin-top:50px;color:#b8ffd9}
+
+/* ======================= */
+/* 1. LIVE UPDATES PANEL */
+/* ======================= */
+.live-updates {
+  background: rgba(255, 50, 50, 0.1);
+  border: 2px solid #ff3838;
+  border-radius: 12px;
+  padding: 15px;
+  margin: 30px 0;
+  animation: pulseRed 2s infinite;
+  max-height: 250px;
+  overflow-y: auto;
+}
+@keyframes pulseRed {
+  0% { box-shadow: 0 0 10px rgba(255, 56, 56, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(255, 56, 56, 0.8); }
+  100% { box-shadow: 0 0 10px rgba(255, 56, 56, 0.5); }
+}
+.live-updates h3 {
+  margin: 0 0 15px 0;
+  color: #ff6b6b;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.live-update-item {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-left: 3px solid var(--neon);
+  animation: slideIn 0.5s ease;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.live-update-item.new {
+  border-left-color: #ff3838;
+  background: rgba(255, 56, 56, 0.15);
+}
+.live-update-item .teams {
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+}
+.live-update-item .score {
+  color: var(--neon);
+  font-size: 1.2em;
+  font-weight: bold;
+  text-align: center;
+  margin: 5px 0;
+}
+.live-update-item .time {
+  color: #aaa;
+  font-size: 0.8em;
+  text-align: right;
+}
+
+/* ======================= */
+/* 2. PLAYER STATS CARDS */
+/* ======================= */
+.player-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin: 30px 0;
+}
+.player-stat-card {
+  background: linear-gradient(145deg, var(--bg2), var(--bg3));
+  border-radius: 14px;
+  padding: 20px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(60, 255, 158, 0.2);
+}
+.player-stat-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 30px rgba(60, 255, 158, 0.25);
+  border-color: var(--neon);
+}
+.player-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  transition: left 0.7s;
+}
+.player-stat-card:hover::before {
+  left: 100%;
+}
+.player-card-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.player-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--neon);
+}
+.player-name {
+  font-size: 1.3em;
+  font-weight: bold;
+  color: #fff;
+}
+.player-rank {
+  color: var(--neon);
+  font-size: 0.9em;
+}
+.stats-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 8px 0;
+  padding: 5px 0;
+  border-bottom: 1px dashed rgba(255,255,255,0.05);
+}
+.stat-label {
+  color: #b8ffd9;
+}
+.stat-value {
+  font-weight: bold;
+  color: #fff;
+}
+.stat-highlight {
+  color: var(--neon);
+  text-shadow: 0 0 8px var(--neon);
+}
+
+/* ======================= */
+/* 3. FORM GUIDE */
+/* ======================= */
+.form-guide-container {
+  background: var(--card);
+  border-radius: 14px;
+  padding: 20px;
+  margin: 30px 0;
+}
+.form-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+.form-guide-item {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  padding: 15px;
+  transition: all 0.3s ease;
+}
+.form-guide-item:hover {
+  background: rgba(0, 0, 0, 0.3);
+  transform: translateY(-3px);
+}
+.form-player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.form-player-name {
+  font-weight: bold;
+  color: #fff;
+}
+.form-score {
+  background: var(--neon);
+  color: #000;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-weight: bold;
+  font-size: 0.9em;
+}
+.form-dots {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+.form-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.8em;
+  transition: transform 0.3s ease;
+}
+.form-dot:hover {
+  transform: scale(1.3);
+}
+.form-dot.W {
+  background: #2ecc71;
+  color: #000;
+}
+.form-dot.D {
+  background: #f1c40f;
+  color: #000;
+}
+.form-dot.L {
+  background: #e74c3c;
+  color: #fff;
+}
+.form-stats {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 0.9em;
+  color: #aaa;
+}
+
+/* ======================= */
+/* 4. CHAMPIONSHIP PROBABILITY */
+/* ======================= */
+.championship-probability {
+  background: linear-gradient(135deg, rgba(157, 78, 221, 0.1), rgba(255, 107, 158, 0.1));
+  border-radius: 14px;
+  padding: 20px;
+  margin: 30px 0;
+  border: 1px solid rgba(157, 78, 221, 0.3);
+}
+.championship-probability h3 {
+  color: #9d4edd;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.probability-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+.probability-item {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  transition: all 0.3s ease;
+}
+.probability-item:hover {
+  background: rgba(0, 0, 0, 0.4);
+  transform: translateX(5px);
+}
+.probability-rank {
+  width: 30px;
+  height: 30px;
+  background: var(--neon);
+  color: #000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+.probability-rank.gold {
+  background: gold;
+}
+.probability-rank.silver {
+  background: silver;
+}
+.probability-rank.bronze {
+  background: #cd7f32;
+}
+.probability-player {
+  flex-grow: 1;
+  font-weight: bold;
+}
+.probability-bar-container {
+  flex: 2;
+  height: 20px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.probability-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #9d4edd, #ff6b9e);
+  border-radius: 10px;
+  transition: width 1s ease;
+  position: relative;
+}
+.probability-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent, 
+    rgba(255,255,255,0.3), 
+    transparent);
+  animation: shimmer 2s infinite;
+}
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.probability-percent {
+  min-width: 60px;
+  text-align: right;
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.1em;
+}
+
+/* FIXTURES */
+#fixtures{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(330px,1fr));
+  gap:20px;
+}
+.fixture{
+  background:var(--card);
+  padding:16px;
+  border-radius:14px;
+}
+.match{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:6px 0;
+  font-size:14px;
+}
+.rankTag{
+  min-width:34px;
+  text-align:center;
+  font-weight:700;
+}
+.arrow.up{color:#2ecc71}
+.arrow.down{color:#e74c3c}
+.arrow.same{color:#aaa}
+
+input.score{
+  width:36px;
+  background:#000;
+  border:1px solid #555;
+  border-radius:6px;
+  color:var(--neon);
+  text-align:center;
+}
+.bye{text-align:center;color:#ffd27d;font-style:italic}
+
+/* TABLE */
+table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:20px;
+  background:var(--card);
+}
+th,td{padding:10px;text-align:center}
+th{color:var(--neon);background:rgba(0,0,0,.35)}
+.gold{box-shadow:inset 0 0 15px gold}
+.silver{box-shadow:inset 0 0 15px silver}
+.bronze{box-shadow:inset 0 0 15px #cd7f32}
+
+/* FIXED: NEON POINTS COLUMN (10th column) - ADDED STYLES */
+td:nth-child(10) {
+  font-weight: 900;
+  color: #fff;
+  text-shadow: 
+    0 0 10px #3cff9e,
+    0 0 20px #3cff9e,
+    0 0 30px #3cff9e;
+  background: rgba(60, 255, 158, 0.15);
+  border-left: 2px solid #3cff9e;
+  border-right: 2px solid #3cff9e;
+  position: relative;
+  animation: neonPulse 2s infinite alternate;
+}
+
+@keyframes neonPulse {
+  from {
+    box-shadow: 
+      inset 0 0 10px rgba(60, 255, 158, 0.3),
+      0 0 10px rgba(60, 255, 158, 0.2);
+  }
+  to {
+    box-shadow: 
+      inset 0 0 20px rgba(60, 255, 158, 0.5),
+      0 0 20px rgba(60, 255, 158, 0.4);
+  }
+}
+
+th:nth-child(10) {
+  font-weight: 900;
+  color: #3cff9e;
+  text-shadow: 
+    0 0 10px #3cff9e,
+    0 0 20px #3cff9e;
+  background: rgba(0, 0, 0, 0.5);
+  border-left: 2px solid #3cff9e;
+  border-right: 2px solid #3cff9e;
+  position: relative;
+}
+
+.player{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  justify-content:center;
+}
+.player img{
+  width:30px;
+  height:30px;
+  border-radius:50%;
+  object-fit:cover;
+}
+.upload{
+  cursor:pointer;
+  color:#9cffc9;
+  font-size:16px;
+}
+
+.form span{
+  display:inline-block;
+  width:14px;
+  height:14px;
+  border-radius:50%;
+  margin:0 1px;
+}
+.form .W{background:#2ecc71}
+.form .D{background:#f1c40f}
+.form .L{background:#e74c3c}
+
+/* ANALYTICS */
+#analytics{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:18px;
+  margin-top:20px;
+}
+.card{
+  background:rgba(255,255,255,0.1);
+  border-radius:14px;
+  padding:16px;
+}
+.card h3{margin-top:0;color:var(--neon)}
+.metric{display:flex;justify-content:space-between;margin:4px 0}
+.good{color:#2ecc71}
+.bad{color:#ff6b6b}
+
+/* BUTTONS */
+.controlBtn{
+  margin:12px 8px 16px 0;
+  padding:8px 18px;
+  border-radius:12px;
+  font-weight:800;
+  border:none;
+  cursor:pointer;
+  transition: all 0.3s ease;
+}
+.lock{
+  background:#00ffff;
+  color:#000;
+  box-shadow:0 0 18px #00ffff;
+}
+.unlock{
+  background:#ff9f43;
+  color:#000;
+  box-shadow:0 0 18px #ff9f43;
+}
+.pdf{
+  background:#ff6b9e;
+  color:#000;
+  box-shadow:0 0 18px #ff6b9e;
+}
+
+/* LOCK BUTTON FEEDBACK - ADDED STYLES */
+.lock:active, .unlock:active, .pdf:active {
+  transform: scale(0.95);
+}
+.lock:active {
+  box-shadow: 0 0 25px #00ffff, 0 0 40px #00ffff;
+}
+.unlock:active {
+  box-shadow: 0 0 25px #ff9f43, 0 0 40px #ff9f43;
+}
+.pdf:active {
+  box-shadow: 0 0 25px #ff6b9e, 0 0 40px #ff6b9e;
+}
+.lock.confirmed {
+  background: #00ff88;
+  box-shadow: 0 0 25px #00ff88, 0 0 40px #00ff88;
+  animation: lockConfirmation 1s ease;
+}
+.pdf.generating {
+  background: #9d4edd;
+  box-shadow: 0 0 25px #9d4edd, 0 0 40px #9d4edd;
+  animation: pdfGeneration 1s ease;
+}
+@keyframes lockConfirmation {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+@keyframes pdfGeneration {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+</style>
+</head>
+
+<body>
+
+<h1>🏆 MPL – Neon Arena League</h1>
+
+<!-- 1. LIVE UPDATES PANEL -->
+<div class="live-updates">
+  <h3>🔴 LIVE MATCH UPDATES</h3>
+  <div id="liveFeed">
+    <!-- Updates will appear here -->
+  </div>
+</div>
+
+<h2>Fixtures</h2>
+<div id="fixtures"></div>
+
+<!-- 2. PLAYER STATISTICS CARDS -->
+<h2>👥 Player Statistics</h2>
+<div class="player-stats-grid" id="playerStatsGrid">
+  <!-- Player cards will be generated here -->
+</div>
+
+<!-- 3. FORM GUIDE -->
+<div class="form-guide-container">
+  <h3>📊 Form Guide (Last 5 Matches)</h3>
+  <div class="form-guide-grid" id="formGuide">
+    <!-- Form guide will be generated here -->
+  </div>
+</div>
+
+<!-- 4. CHAMPIONSHIP PROBABILITY -->
+<div class="championship-probability">
+  <h3>🏆 Championship Probability</h3>
+  <div class="probability-list" id="probabilityList">
+    <!-- Probability bars will be generated here -->
+  </div>
+</div>
+
+<h2>League Table</h2>
+
+<button id="lockBtn" class="controlBtn lock" onclick="lockStandings()">🔒 Lock Standings</button>
+<button id="unlockBtn" class="controlBtn unlock" onclick="unlockStandings()" disabled>🔓 Unlock Standings</button>
+<button id="pdfBtn" class="controlBtn pdf" onclick="exportFixturesToPDF()">📄 Export All GWs to PDF</button>
+
+<table>
+<thead>
+<tr>
+<th>#</th><th>Player</th><th>P</th><th>W</th><th>D</th><th>L</th>
+<th>F</th><th>A</th><th>GD</th><th><b>Pts</b></th><th>Form</th>
+</tr>
+</thead>
+<tbody id="tableBody"></tbody>
+</table>
+
+<h2>📊 Advanced Analytics Board</h2>
+<div id="analytics"></div>
+
+<script>
+/* ========================================== */
+/* READ-ONLY MODE FOR GITHUB PAGES           */
+/* ========================================== */
+(function() {
+  // Check if we're on GitHub Pages (not localhost)
+  const isGitHubPages = window.location.hostname.includes('github.io');
+  const isLocalhost = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.hostname === '';
+  
+  // Enable read-only mode only on GitHub Pages
+  if (isGitHubPages && !isLocalhost) {
+    console.log('🔒 Read-only mode enabled for GitHub Pages');
+    
+    // Function to disable all editing
+    function enableReadOnlyMode() {
+      console.log('Applying read-only restrictions...');
+      
+      // 1. DISABLE ALL SCORE INPUT FIELDS
+      const disableScoreInputs = setInterval(() => {
+        const scoreInputs = document.querySelectorAll('input.score');
+        if (scoreInputs.length > 0) {
+          clearInterval(disableScoreInputs);
+          scoreInputs.forEach(input => {
+            input.disabled = true;
+            input.readOnly = true;
+            input.style.cssText = `
+              cursor: not-allowed;
+              opacity: 0.6;
+              background-color: #333;
+              border-color: #666;
+              color: #888;
+            `;
+            input.title = 'View only - Editing disabled on shared version';
+            input.addEventListener('click', (e) => {
+              e.preventDefault();
+              showReadOnlyMessage();
+            });
+            input.addEventListener('focus', (e) => {
+              e.target.blur();
+            });
+          });
+        }
+      }, 100);
+      
+      // 2. DISABLE LOCK/UNLOCK BUTTONS
+      setTimeout(() => {
+        const lockBtn = document.getElementById('lockBtn');
+        const unlockBtn = document.getElementById('unlockBtn');
+        const pdfBtn = document.getElementById('pdfBtn');
+        
+        if (lockBtn) {
+          lockBtn.disabled = true;
+          lockBtn.style.opacity = '0.5';
+          lockBtn.style.cursor = 'not-allowed';
+          lockBtn.title = 'Disabled in read-only mode';
+        }
+        
+        if (unlockBtn) {
+          unlockBtn.disabled = true;
+          unlockBtn.style.opacity = '0.5';
+          unlockBtn.style.cursor = 'not-allowed';
+        }
+        
+        // Keep PDF button enabled (it's safe)
+        if (pdfBtn) {
+          pdfBtn.title = 'PDF export still works in read-only mode';
+        }
+      }, 200);
+      
+      // 3. DISABLE PLAYER PHOTO UPLOADS
+      setTimeout(() => {
+        document.querySelectorAll('.upload').forEach(btn => {
+          btn.style.pointerEvents = 'none';
+          btn.style.opacity = '0.4';
+          btn.style.cursor = 'not-allowed';
+          btn.title = 'Photo upload disabled in shared version';
+        });
+      }, 300);
+      
+      // 4. ADD READ-ONLY BANNER (TOP OF PAGE)
+      setTimeout(() => {
+        // Create banner
+        const banner = document.createElement('div');
+        banner.id = 'readOnlyBanner';
+        banner.style.cssText = `
+          background: linear-gradient(90deg, #ff3838, #ff6b6b, #ff3838);
+          background-size: 200% 100%;
+          color: white;
+          text-align: center;
+          padding: 12px 20px;
+          font-weight: bold;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 9999;
+          box-shadow: 0 4px 15px rgba(255, 56, 56, 0.3);
+          border-bottom: 2px solid #ff3838;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          animation: bannerPulse 3s infinite, bannerSlide 0.5s ease-out;
+        `;
+        
+        // Add banner styles
+        const style = document.createElement('style');
+        style.textContent = `
+          @keyframes bannerPulse {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          @keyframes bannerSlide {
+            from { transform: translateY(-100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+          }
+        `;
+        document.head.appendChild(style);
+        
+        banner.innerHTML = `
+          <span style="font-size: 1.2em;">🔒</span>
+          <div>
+            <div style="font-size: 1.1em;">VIEW ONLY MODE</div>
+            <div style="font-size: 0.8em; opacity: 0.9; font-weight: normal;">
+              This is a shared read-only version. Editing disabled.
+            </div>
+          </div>
+          <span style="font-size: 1.2em;">👁️</span>
+        `;
+        
+        // Add close button
+        const closeBtn = document.createElement('button');
+        closeBtn.innerHTML = '×';
+        closeBtn.style.cssText = `
+          background: rgba(255,255,255,0.2);
+          color: white;
+          border: none;
+          border-radius: 50%;
+          width: 24px;
+          height: 24px;
+          font-size: 18px;
+          cursor: pointer;
+          margin-left: 15px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background 0.3s;
+        `;
+        closeBtn.onmouseover = () => closeBtn.style.background = 'rgba(255,255,255,0.3)';
+        closeBtn.onmouseout = () => closeBtn.style.background = 'rgba(255,255,255,0.2)';
+        closeBtn.onclick = () => {
+          banner.style.display = 'none';
+          document.body.style.paddingTop = '0';
+        };
+        
+        banner.appendChild(closeBtn);
+        document.body.prepend(banner);
+        
+        // Adjust body padding for banner
+        document.body.style.paddingTop = '60px';
+        
+        console.log('Read-only banner added');
+      }, 400);
+      
+      // 5. ADD FLOATING INDICATOR (BOTTOM RIGHT)
+      setTimeout(() => {
+        const indicator = document.createElement('div');
+        indicator.style.cssText = `
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          background: rgba(255, 56, 56, 0.9);
+          color: white;
+          padding: 8px 15px;
+          border-radius: 20px;
+          font-size: 12px;
+          font-weight: bold;
+          z-index: 9998;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          cursor: pointer;
+          animation: float 3s ease-in-out infinite;
+          border: 2px solid white;
+        `;
+        
+        const floatStyle = document.createElement('style');
+        floatStyle.textContent = `
+          @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+          }
+        `;
+        document.head.appendChild(floatStyle);
+        
+        indicator.innerHTML = `
+          <span>🔒</span>
+          <span>READ-ONLY</span>
+        `;
+        
+        indicator.onclick = () => {
+          showReadOnlyMessage();
+        };
+        
+        document.body.appendChild(indicator);
+      }, 500);
+      
+      // 6. OVERRIDE LOCALSTORAGE TO PREVENT SAVES
+      const originalSetItem = localStorage.setItem;
+      localStorage.setItem = function(key, value) {
+        if (key.includes('mpl_neon')) {
+          console.log('LocalStorage save blocked in read-only mode:', key);
+          return; // Block the save
+        }
+        return originalSetItem.apply(this, arguments);
+      };
+    }
+    
+    // Helper function to show message
+    function showReadOnlyMessage() {
+      const message = document.createElement('div');
+      message.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0,0,0,0.9);
+        color: white;
+        padding: 30px;
+        border-radius: 15px;
+        z-index: 10000;
+        text-align: center;
+        border: 3px solid #ff3838;
+        max-width: 80%;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        animation: popIn 0.3s ease;
+      `;
+      
+      const popStyle = document.createElement('style');
+      popStyle.textContent = `
+        @keyframes popIn {
+          from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+          to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+        }
+      `;
+      document.head.appendChild(popStyle);
+      
+      message.innerHTML = `
+        <div style="font-size: 2em; margin-bottom: 15px;">🔒</div>
+        <div style="font-size: 1.3em; margin-bottom: 10px; color: #ff6b6b;">
+          View Only Mode
+        </div>
+        <div style="margin-bottom: 20px; line-height: 1.5;">
+          This is a shared read-only version of the MPL Dashboard.<br>
+          Editing has been disabled to prevent accidental changes.
+        </div>
+        <div style="background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; margin-bottom: 20px;">
+          <strong>To edit scores:</strong><br>
+          1. Open the dashboard on the administrator's computer<br>
+          2. Or request edit access from the league manager
+        </div>
+        <button onclick="this.parentElement.remove()" 
+                style="background: #ff3838; color: white; border: none; padding: 10px 25px; 
+                       border-radius: 25px; font-weight: bold; cursor: pointer;">
+          Understood
+        </button>
+      `;
+      
+      document.body.appendChild(message);
+      
+      // Close on background click
+      message.onclick = (e) => {
+        if (e.target === message) message.remove();
+      };
+      
+      // Auto-close after 10 seconds
+      setTimeout(() => {
+        if (message.parentElement) message.remove();
+      }, 10000);
+    }
+    
+    // 7. PREVENT RIGHT-CLICK AND COPY (OPTIONAL)
+    if (window.location.hostname.includes('github.io')) {
+      document.addEventListener('contextmenu', (e) => {
+        if (e.target.tagName === 'INPUT') {
+          e.preventDefault();
+          showReadOnlyMessage();
+        }
+      });
+      
+      // Block Ctrl+C on inputs
+      document.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+          if (document.activeElement.tagName === 'INPUT') {
+            showReadOnlyMessage();
+          }
+        }
+      });
+    }
+    
+    // Initialize read-only mode when page loads
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', enableReadOnlyMode);
+    } else {
+      enableReadOnlyMode();
+    }
+    
+    // Also re-apply after updates (for dynamic content)
+    const originalUpdate = window.update;
+    if (originalUpdate) {
+      window.update = function() {
+        originalUpdate.apply(this, arguments);
+        setTimeout(enableReadOnlyMode, 1000);
+      };
+    }
+    
+  } else {
+    console.log('🔓 Full editing mode enabled (local access)');
+  }
+})();
+
+/* ========================================== */
+/* END OF READ-ONLY MODE CODE                */
+/* ========================================== */
+
+const STORAGE_KEY = "mpl_neon_state_v1";
+
+let standingsLocked=false;
+let previousRanks={};
+let currentRanks={};
+let liveUpdates = []; // Store live updates
+let lastScores = {}; // Track last known scores for live updates
+
+const players=[
+"Abdullah","Shaooly","Anas","Daf","Isam","Mazen","Monti","Fikry",
+"Prtc. Tariq","K Haider","Moaiad","Alnagar",
+"Mohammed","Moawia","Wd Hazim","M Haider","Gustavoo","Madridi",
+"Omar","A Faisal","Hammad","O Haider","Ehab","Yousuf A","Ghassan"
+];
+
+const gw1Matches=[
+["Mohammed",7,"Moawia",7],
+["Wd Hazim",9,"M Haider",10],
+["Gustavoo",8,"Madridi",10],
+["Omar",13,"A Faisal",13],
+["Hammad",8,"O Haider",11],
+["Ehab",9,"Yousuf A",12],
+["Abdullah",15,"Shaooly",10],
+["Anas",6,"Daf",14],
+["Isam",14,"Mazen",14],
+["Monti",5,"Fikry",13],
+["Prtc. Tariq",10,"K Haider",7],
+["Moaiad",14,"Alnagar",6]
+];
+
+function roundRobin(list){
+  let t=[...list];
+  if(t.length%2)t.push("BYE");
+  const rounds=t.length-1,half=t.length/2;
+  const out=[];
+  for(let r=0;r<rounds;r++){
+    const matches=[];let bye=null;
+    for(let i=0;i<half;i++){
+      const a=t[i],b=t[t.length-1-i];
+      if(a==="BYE") bye=b;
+      else if(b==="BYE") bye=a;
+      else matches.push([a,"",b,""]);
+    }
+    out.push({matches,bye});
+    t.splice(1,0,t.pop());
+  }
+  return out;
+}
+
+let fixtures=roundRobin(players);
+
+// Remove auto-BYE from Ghassan (he already has GW1 BYE)
+fixtures.forEach(gw => {
+  if (gw.bye === "Ghassan") gw.bye = "Abdullah";
+});
+
+fixtures[0]={matches:gw1Matches,bye:"Ghassan"};
+
+let stats={},h2h={};
+players.forEach(p=>{
+  stats[p]={P:0,W:0,D:0,L:0,F:0,A:0,Pts:0,form:[],img:null};
+  h2h[p]={};
+});
+
+/* =======================
+   🔐 PERSISTENCE
+======================= */
+function saveState(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify({
+    fixtures,stats,standingsLocked,previousRanks
+  }));
+}
+function loadState(){
+  const raw=localStorage.getItem(STORAGE_KEY);
+  if(!raw) return;
+  try{
+    const s=JSON.parse(raw);
+    if(s.fixtures) fixtures=s.fixtures;
+    if(s.stats) stats=s.stats;
+    if(typeof s.standingsLocked==="boolean") standingsLocked=s.standingsLocked;
+    if(s.previousRanks) previousRanks=s.previousRanks;
+  }catch(e){}
+}
+
+/* =======================
+   📄 PDF EXPORT FUNCTION
+======================= */
+function exportFixturesToPDF() {
+  const pdfBtn = document.getElementById('pdfBtn');
+  const originalText = pdfBtn.innerHTML;
+  
+  // Visual feedback
+  pdfBtn.classList.add('generating');
+  pdfBtn.innerHTML = '⏳ Generating PDF...';
+  pdfBtn.disabled = true;
+  
+  setTimeout(() => {
+    try {
+      // Create PDF document
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      // Title page
+      doc.setFontSize(24);
+      doc.setTextColor(60, 255, 158);
+      doc.text("MPL – Neon Arena League", 105, 40, { align: 'center' });
+      
+      doc.setFontSize(18);
+      doc.setTextColor(0, 0, 0);
+      doc.text("Season Fixtures & Results", 105, 60, { align: 'center' });
+      
+      doc.setFontSize(14);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`Total Game Weeks: ${fixtures.length}`, 105, 80, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 105, 90, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(150, 150, 150);
+      doc.text("Page 1", 105, 280, { align: 'center' });
+      
+      // Loop through all game weeks - EACH ON A NEW PAGE
+      fixtures.forEach((gw, gwIndex) => {
+        // Start each Game Week on a new page (except first which is title page)
+        if (gwIndex > 0) {
+          doc.addPage();
+        }
+        
+        let yPos = 20;
+        
+        // Game Week Header - Large and prominent
+        doc.setFontSize(20);
+        doc.setTextColor(255, 107, 158);
+        doc.text(`Game Week ${gwIndex + 1}`, 14, yPos);
+        
+        yPos += 15;
+        
+        // Add a decorative line
+        doc.setDrawColor(60, 255, 158);
+        doc.setLineWidth(0.5);
+        doc.line(14, yPos, 196, yPos);
+        
+        yPos += 10;
+        
+        // Matches table
+        const tableData = [];
+        gw.matches.forEach((match, matchIndex) => {
+          const homePlayer = match[0];
+          const homeScore = match[1] !== "" ? match[1] : "TBD";
+          const awayPlayer = match[2];
+          const awayScore = match[3] !== "" ? match[3] : "TBD";
+          const scoreSeparator = (match[1] !== "" && match[3] !== "") ? "-" : "vs";
+          
+          tableData.push([
+            matchIndex + 1,
+            homePlayer,
+            homeScore,
+            scoreSeparator,
+            awayPlayer,
+            awayScore,
+            getMatchStatus(match[1], match[3])
+          ]);
+        });
+        
+        // Add BYE information
+        if (gw.bye) {
+          tableData.push([
+            gw.matches.length + 1,
+            "BYE",
+            "",
+            "",
+            gw.bye,
+            "",
+            "BYE"
+          ]);
+        }
+        
+        doc.autoTable({
+          startY: yPos,
+          head: [['#', 'Home Player', 'Score', '', 'Away Player', 'Score', 'Status']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { 
+            fillColor: [60, 255, 158],
+            textColor: [0, 0, 0],
+            fontStyle: 'bold'
+          },
+          bodyStyles: { textColor: [50, 50, 50] },
+          alternateRowStyles: { fillColor: [245, 245, 245] },
+          margin: { left: 14, right: 14 },
+          styles: { fontSize: 10, cellPadding: 5 },
+          columnStyles: {
+            0: { cellWidth: 15 }, // #
+            1: { cellWidth: 40 }, // Home Player
+            2: { cellWidth: 25 }, // Home Score
+            3: { cellWidth: 15 }, // vs
+            4: { cellWidth: 40 }, // Away Player
+            5: { cellWidth: 25 }, // Away Score
+            6: { cellWidth: 30 }  // Status
+          },
+          didDrawPage: function(data) {
+            // Footer with page number
+            doc.setFontSize(10);
+            doc.setTextColor(150, 150, 150);
+            const pageNum = doc.internal.getNumberOfPages();
+            doc.text(`Game Week ${gwIndex + 1} - Page ${pageNum}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+          }
+        });
+        
+        // Add some space after the table
+        yPos = doc.lastAutoTable.finalY + 10;
+        
+        // Add match completion statistics if available
+        const completedMatches = gw.matches.filter(m => m[1] !== "" && m[3] !== "").length;
+        const totalMatches = gw.matches.length;
+        
+        if (totalMatches > 0) {
+          doc.setFontSize(11);
+          doc.setTextColor(80, 80, 80);
+          doc.text(`Matches Completed: ${completedMatches}/${totalMatches}`, 14, yPos);
+          
+          // Add progress bar visualization
+          const completionRate = totalMatches > 0 ? (completedMatches / totalMatches) * 100 : 0;
+          yPos += 8;
+          doc.setFillColor(230, 230, 230);
+          doc.rect(14, yPos, 120, 6, 'F');
+          doc.setFillColor(60, 255, 158);
+          doc.rect(14, yPos, (completionRate / 100) * 120, 6, 'F');
+        }
+      });
+      
+      // Add league table on a NEW PAGE at the end
+      doc.addPage();
+      doc.setFontSize(22);
+      doc.setTextColor(60, 255, 158);
+      doc.text("League Standings", 105, 25, { align: 'center' });
+      
+      doc.setFontSize(12);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`As of Game Week ${fixtures.length}`, 105, 35, { align: 'center' });
+      
+      const tableData = [];
+      const order = computeRanks();
+      
+      order.forEach((player, index) => {
+        const s = stats[player];
+        const form = s.form.slice(-5).map(r => {
+          if (r === 'W') return 'W';
+          if (r === 'D') return 'D';
+          if (r === 'L') return 'L';
+          return '';
+        }).join('');
+        
+        tableData.push([
+          index + 1,
+          player,
+          s.P,
+          s.W,
+          s.D,
+          s.L,
+          s.F,
+          s.A,
+          s.F - s.A,
+          s.Pts,
+          form
+        ]);
+      });
+      
+      doc.autoTable({
+        startY: 45,
+        head: [['Pos', 'Player', 'P', 'W', 'D', 'L', 'F', 'A', 'GD', 'Pts', 'Form']],
+        body: tableData,
+        theme: 'grid',
+        headStyles: { 
+          fillColor: [60, 255, 158],
+          textColor: [0, 0, 0],
+          fontStyle: 'bold'
+        },
+        columnStyles: {
+          0: { cellWidth: 20, fontStyle: 'bold' }, // Position
+          9: { 
+            fillColor: [60, 255, 158, 0.3], // Points column highlight
+            fontStyle: 'bold',
+            textColor: [0, 0, 0]
+          },
+          10: { cellWidth: 35 } // Form
+        },
+        styles: { fontSize: 9 },
+        didDrawPage: function(data) {
+          // Footer
+          doc.setFontSize(10);
+          doc.setTextColor(150, 150, 150);
+          doc.text(`League Table - Page ${doc.internal.getNumberOfPages()}`, data.settings.margin.left, doc.internal.pageSize.height - 10);
+        }
+      });
+      
+      // Add summary statistics
+      const finalY = doc.lastAutoTable.finalY + 15;
+      doc.setFontSize(11);
+      doc.setTextColor(60, 60, 60);
+      
+      const totalGoals = order.reduce((sum, player) => sum + stats[player].F, 0);
+      const avgGoalsPerGame = totalGoals / fixtures.reduce((sum, gw) => sum + gw.matches.length, 0);
+      const leader = order[0];
+      
+      doc.text(`League Leader: ${leader} (${stats[leader].Pts} points)`, 14, finalY);
+      doc.text(`Total Goals Scored: ${totalGoals}`, 14, finalY + 8);
+      doc.text(`Average Goals per Game: ${avgGoalsPerGame.toFixed(2)}`, 14, finalY + 16);
+      
+      // Save the PDF
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      doc.save(`MPL_Neon_Arena_GWs_${timestamp}.pdf`);
+      
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      alert('Error generating PDF. Please check console for details.');
+    }
+    
+    // Reset button state
+    setTimeout(() => {
+      pdfBtn.classList.remove('generating');
+      pdfBtn.innerHTML = originalText;
+      pdfBtn.disabled = false;
+    }, 500);
+    
+  }, 300);
+  
+  // Helper function to determine match status
+  function getMatchStatus(homeScore, awayScore) {
+    if (homeScore === "" || awayScore === "") return "Pending";
+    if (homeScore > awayScore) return "Home Win";
+    if (awayScore > homeScore) return "Away Win";
+    return "Draw";
+  }
+}
+
+/* ======================= */
+/* 1. LIVE UPDATES FUNCTION */
+/* ======================= */
+function checkForScoreUpdates() {
+  const updates = [];
+  
+  fixtures.forEach((gw, gwIndex) => {
+    gw.matches.forEach((match, matchIndex) => {
+      const matchId = `${gwIndex}-${matchIndex}`;
+      const currentScore = `${match[1]}-${match[3]}`;
+      
+      // Check if score has changed and both scores are entered
+      if (lastScores[matchId] && lastScores[matchId] !== currentScore && 
+          match[1] !== "" && match[3] !== "") {
+        
+        const oldScore = lastScores[matchId].split('-');
+        const newUpdate = {
+          id: matchId,
+          home: match[0],
+          away: match[2],
+          oldScore: lastScores[matchId],
+          newScore: currentScore,
+          time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          isNew: true
+        };
+        
+        updates.push(newUpdate);
+        liveUpdates.unshift(newUpdate); // Add to beginning of array
+      }
+      
+      lastScores[matchId] = currentScore;
+    });
+  });
+  
+  // Keep only last 10 updates
+  if (liveUpdates.length > 10) {
+    liveUpdates = liveUpdates.slice(0, 10);
+  }
+  
+  return updates;
+}
+
+function renderLiveUpdates() {
+  const liveFeed = document.getElementById('liveFeed');
+  if (!liveFeed) return;
+  
+  if (liveUpdates.length === 0) {
+    liveFeed.innerHTML = '<div class="live-update-item">No recent updates. Enter scores to see live updates!</div>';
+    return;
+  }
+  
+  liveFeed.innerHTML = liveUpdates.map((update, index) => `
+    <div class="live-update-item ${update.isNew ? 'new' : ''}">
+      <div class="teams">
+        <span>${update.home}</span>
+        <span>${update.away}</span>
+      </div>
+      <div class="score">${update.newScore.split('-')[0]} - ${update.newScore.split('-')[1]}</div>
+      <div class="time">${update.time}</div>
+    </div>
+  `).join('');
+  
+  // Mark updates as not new after displaying
+  liveUpdates.forEach(update => update.isNew = false);
+}
+
+/* ======================= */
+/* 2. PLAYER STATS CARDS */
+/* ======================= */
+function renderPlayerStatsCards() {
+  const grid = document.getElementById('playerStatsGrid');
+  if (!grid) return;
+  
+  const order = computeRanks();
+  
+  grid.innerHTML = order.map((player, index) => {
+    const s = stats[player];
+    const rank = index + 1;
+    
+    return `
+      <div class="player-stat-card" onclick="showPlayerDetails('${player}')">
+        <div class="player-card-header">
+          <div class="player-avatar">
+            ${s.img ? `<img src="${s.img}" class="player-avatar">` : '👤'}
+          </div>
+          <div>
+            <div class="player-name">${player}</div>
+            <div class="player-rank">#${rank} in League</div>
+          </div>
+        </div>
+        
+        <div class="stats-row">
+          <span class="stat-label">Points:</span>
+          <span class="stat-value stat-highlight">${s.Pts}</span>
+        </div>
+        
+        <div class="stats-row">
+          <span class="stat-label">Record:</span>
+          <span class="stat-value">${s.W}-${s.D}-${s.L}</span>
+        </div>
+        
+        <div class="stats-row">
+          <span class="stat-label">Goals:</span>
+          <span class="stat-value">${s.F} ⚽ ${s.A}</span>
+        </div>
+        
+        <div class="stats-row">
+          <span class="stat-label">Goal Difference:</span>
+          <span class="stat-value ${s.F - s.A > 0 ? 'good' : s.F - s.A < 0 ? 'bad' : ''}">
+            ${s.F - s.A > 0 ? '+' : ''}${s.F - s.A}
+          </span>
+        </div>
+        
+        <div class="stats-row">
+          <span class="stat-label">Form:</span>
+          <span class="stat-value">
+            ${s.form.slice(-5).map(r => 
+              `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;margin:0 2px;background:${
+                r === 'W' ? '#2ecc71' : r === 'D' ? '#f1c40f' : '#e74c3c'
+              }"></span>`
+            ).join('')}
+          </span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showPlayerDetails(playerName) {
+  const s = stats[playerName];
+  alert(`${playerName} Details:\n
+📊 Record: ${s.W}-${s.D}-${s.L} (${s.P} played)
+🏆 Points: ${s.Pts}
+⚽ Goals: ${s.F} for, ${s.A} against
+📈 GD: ${s.F - s.A > 0 ? '+' : ''}${s.F - s.A}
+📋 Form: ${s.form.slice(-5).join(', ')}`);
+}
+
+/* ======================= */
+/* 3. FORM GUIDE */
+/* ======================= */
+function renderFormGuide() {
+  const formGuide = document.getElementById('formGuide');
+  if (!formGuide) return;
+  
+  const order = computeRanks();
+  
+  formGuide.innerHTML = order.map(player => {
+    const s = stats[player];
+    const last5 = s.form.slice(-5);
+    
+    // Calculate form score (3 points for win, 1 for draw)
+    const formScore = last5.reduce((score, result) => {
+      if (result === 'W') return score + 3;
+      if (result === 'D') return score + 1;
+      return score;
+    }, 0);
+    
+    // Count wins/draws/losses
+    const wins = last5.filter(r => r === 'W').length;
+    const draws = last5.filter(r => r === 'D').length;
+    const losses = last5.filter(r => r === 'L').length;
+    
+    return `
+      <div class="form-guide-item">
+        <div class="form-player-header">
+          <span class="form-player-name">${player}</span>
+          <span class="form-score">${formScore} pts</span>
+        </div>
+        
+        <div class="form-dots">
+          ${last5.map((result, index) => `
+            <div class="form-dot ${result}" title="Match ${index + 1}: ${result}">
+              ${result}
+            </div>
+          `).join('')}
+        </div>
+        
+        <div class="form-stats">
+          <span>W: ${wins}</span>
+          <span>D: ${draws}</span>
+          <span>L: ${losses}</span>
+          <span>Avg: ${(formScore / 5).toFixed(1)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ======================= */
+/* 4. CHAMPIONSHIP PROBABILITY */
+/* ======================= */
+function calculateChampionshipProbabilities() {
+  const probabilities = [];
+  const order = computeRanks();
+  
+  // Calculate total points for normalization
+  const totalPoints = order.reduce((sum, player) => sum + stats[player].Pts, 0);
+  
+  order.forEach((player, index) => {
+    const s = stats[player];
+    const last5 = s.form.slice(-5);
+    
+    // Base probability based on current points
+    let probability = (s.Pts / totalPoints) * 100;
+    
+    // Adjust based on form (recent performance matters more)
+    const formBonus = last5.reduce((bonus, result) => {
+      if (result === 'W') return bonus + 5;
+      if (result === 'D') return bonus + 2;
+      return bonus - 3;
+    }, 0);
+    
+    // Adjust based on goal difference (dominance matters)
+    const gdBonus = (s.F - s.A) * 0.5;
+    
+    // Adjust based on position (top teams get bonus)
+    const positionBonus = (order.length - index) * 2;
+    
+    // Final probability with adjustments
+    probability += formBonus + gdBonus + positionBonus;
+    
+    // Ensure probability is between 0.1% and 99.9%
+    probability = Math.max(0.1, Math.min(99.9, probability));
+    
+    probabilities.push({
+      player,
+      probability: probability,
+      rank: index + 1,
+      points: s.Pts,
+      form: last5
+    });
+  });
+  
+  // Normalize to sum to 100%
+  const totalProb = probabilities.reduce((sum, p) => sum + p.probability, 0);
+  probabilities.forEach(p => {
+    p.probability = (p.probability / totalProb) * 100;
+  });
+  
+  // Sort by probability (highest first)
+  return probabilities.sort((a, b) => b.probability - a.probability);
+}
+
+function renderChampionshipProbability() {
+  const probabilityList = document.getElementById('probabilityList');
+  if (!probabilityList) return;
+  
+  const probabilities = calculateChampionshipProbabilities();
+  
+  probabilityList.innerHTML = probabilities.map((p, index) => {
+    const rankClass = index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? 'bronze' : '';
+    
+    return `
+      <div class="probability-item">
+        <div class="probability-rank ${rankClass}">${index + 1}</div>
+        <div class="probability-player">${p.player}</div>
+        <div class="probability-bar-container">
+          <div class="probability-bar" style="width: ${p.probability}%"></div>
+        </div>
+        <div class="probability-percent">${p.probability.toFixed(1)}%</div>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ======================= */
+
+function computeRanks(){
+  const order=[...players].sort((a,b)=>{
+    const A=stats[a],B=stats[b];
+    const hA=h2h[a][b]||{pts:0,gd:0};
+    const hB=h2h[b][a]||{pts:0,gd:0};
+    return B.Pts-A.Pts||
+           hB.pts-hA.pts||
+           hB.gd-hA.gd||
+           (B.F-B.A)-(A.F-A.A)||
+           B.F-A.F;
+  });
+  currentRanks={};
+  order.forEach((p,i)=>currentRanks[p]=i+1);
+  return order;
+}
+// 🔧 FIX: ensure Abdullah BYE week removes him from matches
+fixtures.forEach(gw => {
+  if (gw.bye === "Abdullah") {
+    gw.matches.forEach(m => {
+      if (m[0] === "Abdullah") m[0] = "Ghassan";
+      if (m[2] === "Abdullah") m[2] = "Ghassan";
+    });
+  }
+});
+
+// Re-enforce GW1 override
+fixtures[0] = { matches: gw1Matches, bye: "Ghassan" };
+
+function update(){
+  players.forEach(p=>{
+    const img=stats[p].img;
+    stats[p]={P:0,W:0,D:0,L:0,F:0,A:0,Pts:0,form:[],img};
+    h2h[p]={};
+  });
+
+  fixtures.forEach(gw=>{
+    gw.matches.forEach(m=>{
+      if(m[1]===""||m[3]==="")return;
+      const h=+m[1],a=+m[3],H=m[0],A=m[2];
+      stats[H].P++;stats[A].P++;
+      stats[H].F+=h;stats[H].A+=a;
+      stats[A].F+=a;stats[A].A+=h;
+      h2h[H][A]??={pts:0,gd:0};
+      h2h[A][H]??={pts:0,gd:0};
+      h2h[H][A].gd+=h-a;
+      h2h[A][H].gd+=a-h;
+
+      if(h>a){stats[H].W++;stats[H].Pts+=3;stats[H].form.push("W");stats[A].L++;stats[A].form.push("L");h2h[H][A].pts+=3}
+      else if(a>h){stats[A].W++;stats[A].Pts+=3;stats[A].form.push("W");stats[H].L++;stats[H].form.push("L");h2h[A][H].pts+=3}
+      else{stats[H].D++;stats[A].D++;stats[H].Pts++;stats[A].Pts++;stats[H].form.push("D");stats[A].form.push("D");h2h[H][A].pts++;h2h[A][H].pts++}
+    });
+  });
+
+  const order=computeRanks();
+  // FIX: Only update previousRanks if we're NOT locked and previousRanks is empty
+  if(!standingsLocked && Object.keys(previousRanks).length === 0) {
+    previousRanks = {...currentRanks};
+  }
+
+  // Check for score updates (for live updates)
+  checkForScoreUpdates();
+  
+  renderFixtures();
+  renderTable(order);
+  renderAnalytics();
+  
+  // NEW: Render all the new features
+  renderLiveUpdates();
+  renderPlayerStatsCards();
+  renderFormGuide();
+  renderChampionshipProbability();
+  
+  saveState();
+}
+
+function renderFixtures(){
+  const f=document.getElementById("fixtures");
+  f.innerHTML="";
+  fixtures.forEach((gw,i)=>{
+    const d=document.createElement("div");
+    d.className="fixture";
+    d.innerHTML=`<b>GW ${i+1}</b>`;
+    gw.matches.forEach((m,idx)=>{
+      const arrow=p=>{
+        if(!(p in previousRanks))return "same";
+        if(previousRanks[p]>currentRanks[p])return "up";
+        if(previousRanks[p]<currentRanks[p])return "down";
+        return "same";
+      };
+      d.innerHTML+=`
+      <div class="match">
+        <span class="rankTag">${currentRanks[m[0]]||"-"} <span class="arrow ${arrow(m[0])}">${arrow(m[0])==="up"?"▲":arrow(m[0])==="down"?"▼":"•"}</span></span>
+        ${m[0]}
+        <span>
+          <input class="score" data-g="${i}" data-m="${idx}" data-s="h" value="${m[1]}"> -
+          <input class="score" data-g="${i}" data-m="${idx}" data-s="a" value="${m[3]}">
+        </span>
+        ${m[2]}
+        <span class="rankTag">${currentRanks[m[2]]||"-"} <span class="arrow ${arrow(m[2])}">${arrow(m[2])==="up"?"▲":arrow(m[2])==="down"?"▼":"•"}</span></span>
+      </div>`;
+    });
+    d.innerHTML+=`<div class="bye">BYE: ${gw.bye}</div>`;
+    f.appendChild(d);
+  });
+
+  document.querySelectorAll(".score").forEach(i=>{
+    i.oninput=()=>{
+      fixtures[i.dataset.g].matches[i.dataset.m][i.dataset.s==="h"?1:3]=i.value;
+      update();
+    };
+  });
+}
+
+function renderTable(order){
+  const tb=document.getElementById("tableBody");
+  tb.innerHTML="";
+  order.forEach((n,i)=>{
+    const s=stats[n];
+    const prev=previousRanks[n];
+    const arrow=prev==null?"same":prev>i+1?"up":prev<i+1?"down":"same";
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+    <td>${i+1} <span class="arrow ${arrow}">${arrow==="up"?"▲":arrow==="down"?"▼":"•"}</span></td>
+    <td class="player">
+      ${s.img?`<img src="${s.img}">`:""}
+      ${n}
+      ${!s.img?`<span class="upload" data-p="${n}">📷</span>`:""}
+    </td>
+    <td>${s.P}</td><td>${s.W}</td><td>${s.D}</td><td>${s.L}</td>
+    <td>${s.F}</td><td>${s.A}</td><td>${s.F-s.A}</td>
+    <td><b>${s.Pts}</b></td>
+    <td class="form">${s.form.map(r=>`<span class="${r}"></span>`).join("")}</td>`;
+    tb.appendChild(tr);
+  });
+
+  document.querySelectorAll(".upload").forEach(u=>{
+    u.onclick=()=>{
+      const input=document.createElement("input");
+      input.type="file";
+      input.accept="image/*";
+      input.onchange=e=>{
+        const reader=new FileReader();
+        reader.onload=ev=>{
+          stats[u.dataset.p].img=ev.target.result;
+          saveState();
+          update();
+        };
+        reader.readAsDataURL(e.target.files[0]);
+      };
+      input.click();
+    };
+  });
+}
+
+function renderAnalytics(){
+  let best=["",0];
+  players.forEach(p=>{if(stats[p].F>best[1])best=[p,stats[p].F];});
+  document.getElementById("analytics").innerHTML=
+  `<div class="card"><h3>🥅 Best Attack</h3>
+   <div class="metric"><span>${best[0]}</span><span class="good">${best[1]}</span></div></div>`;
+}
+
+function lockStandings(){
+  const lockBtn = document.getElementById("lockBtn");
+  
+  // Add visual feedback
+  lockBtn.classList.add('confirmed');
+  lockBtn.innerHTML = '🔒 Locked!';
+  
+  // Set the actual locking after animation
+  setTimeout(() => {
+    standingsLocked = true;
+    saveState();
+    lockBtn.disabled = true;
+    lockBtn.innerHTML = '🔒 Locked';
+    document.getElementById("unlockBtn").disabled = false;
+    
+    // Remove confirmation class after animation completes
+    setTimeout(() => {
+      lockBtn.classList.remove('confirmed');
+    }, 1000);
+  }, 300);
+}
+
+function unlockStandings(){
+  const unlockBtn = document.getElementById("unlockBtn");
+  
+  // Add visual feedback
+  unlockBtn.innerHTML = '🔓 Unlocking...';
+  
+  setTimeout(() => {
+    standingsLocked = false;
+    // FIX: Don't clear previousRanks immediately - let the update function handle it
+    // This allows arrows to show movement from the locked position
+    previousRanks = {...currentRanks};
+    saveState();
+    
+    unlockBtn.innerHTML = '🔓 Unlocked';
+    unlockBtn.disabled = true;
+    document.getElementById("lockBtn").disabled = false;
+    document.getElementById("lockBtn").innerHTML = '🔒 Lock Standings';
+    
+    // Trigger an update to show arrows
+    update();
+    
+    setTimeout(() => {
+      unlockBtn.innerHTML = '🔓 Unlock Standings';
+    }, 1000);
+  }, 300);
+}
+
+// Initialize lastScores for live updates
+function initializeLastScores() {
+  fixtures.forEach((gw, gwIndex) => {
+    gw.matches.forEach((match, matchIndex) => {
+      const matchId = `${gwIndex}-${matchIndex}`;
+      lastScores[matchId] = `${match[1]}-${match[3]}`;
+    });
+  });
+}
+
+loadState();
+initializeLastScores();
+update();
+</script>
+</body>
+</html>
